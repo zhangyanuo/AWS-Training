@@ -4,9 +4,10 @@ const Redis = require("ioredis");
 
 const app = new Koa();
 const router = new Router();
+
 const redis = new Redis({
   port: 6379,
-  host: '127.0.0.1'
+  host: 'db',
 });
 
 router.get('/', (ctx, next) => {
