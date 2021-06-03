@@ -1,0 +1,36 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: create lambda
+Resources:
+  yanuoLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+            Effect: Allow
+            Action: 'sts:AssumeRole'
+            Principal:
+              Service:
+                - 'lambda.amazonaws.com'
+      Path: /
+ 
+  yanuoLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: create a lambda function using cloudmation.
+      Code:
+        ZipFile: |
+          exports.handler = async (event, context, callback) =>{
+            console.log("execute lambda....");
+            console.log("event:" + event);
+            console.log("context:" + context);
+          }
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Role: !GetAtt yanuoLambdaRole.Arn
+  yanuoLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/yanuoLambda
+      RetentionInDays: 7
