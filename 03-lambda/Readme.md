@@ -8,7 +8,7 @@ https://en.wikipedia.org/wiki/Serverless_computing
 
 *Output：*
 
->![Output](https://raw.githubusercontent.com/hongmaju/light7Local/master/img/productShow/20170518152848.png)
+>![Output](https://raw.githubusercontent.com/zhangyanuo/AWS-Training/master/03-lambda/img/Picture1.png)
 
 
 ### **Lambda function via aws cli with ZIP file and invoke Create Lambda**
@@ -19,9 +19,15 @@ https://en.wikipedia.org/wiki/Serverless_computing
 
 ### **Create lambda by aws cloudformation**
 
+>![lambda](https://raw.githubusercontent.com/zhangyanuo/AWS-Training/master/03-lambda/img/Picture2.png)
+Output:
+ >![output](https://raw.githubusercontent.com/zhangyanuo/AWS-Training/master/03-lambda/img/Picture3.png)
+ 
 `Question:'sts:AssumeRole' 这个什么意思?`
 
 ### **Log lambda request event to cloudwatch：**
+
+>![cloudwatcher](https://raw.githubusercontent.com/zhangyanuo/AWS-Training/master/03-lambda/img/Picture4.png)
 
 `Question:为啥没有任何log在test之后？`
 
