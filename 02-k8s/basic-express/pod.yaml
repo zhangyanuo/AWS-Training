@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: basic-express-pod
+  labels:
+    app: basic-express
+spec:
+  containers:
+  - name: basic-express-pod
+    image: basic-express
+    ports:
+    - containerPort: 80

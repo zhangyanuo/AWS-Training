@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Application Notification Sender
+Parameters:
+  FunctionName:
+    Description: Lambda Function Name
+    Default: application-notification-sender
+    Type: String
+  VpcId:
+    Description: Resi Rent VPC ID
+    Type: String
+
+
+Resources:
+  LambdaSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Limits security group egress traffic
+        VpcId: !Ref VpcId
+
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${FunctionName}
+      RetentionInDays: 7
+
+  TagLambdaLogGroup:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: LambdaLogGroup
+    Properties:
+      TemplateURL: !Sub https://flukis2-producer-artifacts-${AWS::Region}.s3.amazonaws.com/cloudformation/tag-log-group-custom-resource.yaml
+      Parameters:
+        LogGroupName: !Ref LambdaLogGroup
+        TagKey: flukis2
+        TagValue: !Ref SplunkIndex
+
+
+  ApplicationNotificationSender:
+    Type: AWS::Serverless::Function
+    DependsOn: LambdaLogGroup
+    Properties:
+      FunctionName: !Ref FunctionName
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Timeout: 180
+      MemorySize: !Ref MemorySize
+      Layers:
+        - !Ref ApplicationNotificationSenderLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds: !Ref SubnetIds
+      CodeUri: ../../dist
+      Events:
+        ApplicationNotificationSenderQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ApplicationNotificationSenderQueue.Arn
+            BatchSize: 1
+      Environment:
+        Variables:
+          APP_ENV: !Ref AppEnv
+          TAAPI_URL: !Ref TAAPIURL
+          TAAPI_CLIENT_ID: !Ref TAAPIClientID
+          KMS_ENCRYPTED_TAAPI_CLIENT_SECRET: !Ref KMSEncryptedTAAPIClientSecret
+          KAFKA_PROXY_HOST: !Ref KafkaProxyHost
+          CLOUD_WATCH_NAMESPACE: !Ref CloudWatchNamespace
+          CLOUD_WATCH_METRIC_UPDATE_INVITATION_NOTIFICATION_STATUS_ERROR: !Ref CloudWatchMetricUpdateInvitationNotificationStatusError
+          CLOUD_WATCH_METRIC_UPDATE_APPLICATION_SUBMITTED_NOTIFICATION_STATUS_ERROR: !Ref CloudWatchMetricUpdateApplicationSubmittedNotificationStatusError
+      Policies:
+        - KMSDecryptPolicy:
+            KeyId: !Ref KMSKeyID
+        - CloudWatchPutMetricPolicy: {}
+
+  ApplicationNotificationSenderLayer:
+    Type: 'AWS::Serverless::LayerVersion'
+    Properties:
+      CompatibleRuntimes:
+        - nodejs12.x
+      ContentUri: '../../layer/nodejs.zip'
+      Description: Lambda Layer for node_modules
+      LayerName: application-notification-sender-node-modules
+
+
+
+  ApplicationCustomerNotificationSenderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref ApplicationCustomerNotificationSenderFunctionRoleName
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowLambdaToAssumeRole
+            Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - 'lambda.amazonaws.com'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: AllowPublishToPartnerPlatformDomainEventTopic
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref PartnerPlatformNotificationTopicArn
+
+  
